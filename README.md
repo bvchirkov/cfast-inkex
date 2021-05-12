@@ -7,7 +7,7 @@
 3) Python >= 3.5
 
 ### Установка
-1) Скачайте файлы плагина из репозитория ([zip-архив](https://github.com/bvchirkov/cfast-inkex/archive/refs/heads/master.zip))
+1) Скачайте файлы плагина со страницы выпусков ([releases](https://github.com/bvchirkov/cfast-inkex/releases))
 2) Раскапуйте архив и поместите файлы в дирректорию, указанную в `Правка > Параметры > Система: Пользовательские расширения`
 3) Перезапустите Inkscape
 
