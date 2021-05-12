@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<inkscape-extension xmlns="http://www.inkscape.org/namespace/inkscape/extension">
+    <name>Export as CFAST geometry</name>
+    <id>ru.rintd.export_cfast_geometry</id>
+    <output>
+        <extension>.in</extension>
+        <mimetype>text/plain</mimetype>
+        <filetypename>CFAST geometry (*.in)</filetypename>
+        <filetypetooltip>Exports the poligons of this document as CFAST geometry</filetypetooltip>
+    </output>
+    <script>
+        <command location="inx" interpreter="python">export_cfast_geometry.py</command>
+    </script>
+</inkscape-extension>

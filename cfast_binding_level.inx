@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<inkscape-extension xmlns="http://www.inkscape.org/namespace/inkscape/extension">
+  <name>Привязка уровней</name>
+  <id>ru.rintd.cfast_binding_lavel</id>
+  
+  <param name="tab" type="notebook">
+    <page name="Opt" gui-text="Привязка">
+      <param name="linking" type="optiongroup" appearance="radio" gui-text="">
+        <option value="link">Привязать</option>
+        <option value="unlink">Отвязать</option>
+    </param>
+    </page>
+    <page name="Help" gui-text="Help">
+      <label xml:space="preserve">
+Тут будет справка по использованию плагина
+      </label>
+     </page>
+   </param>
+
+  <effect>
+    <effects-menu>
+      <submenu name="CFAST"/>
+    </effects-menu>
+  </effect>
+  <script>
+    <command location="inx" interpreter="python">cfast_binding_level.py</command>
+  </script>
+</inkscape-extension>
