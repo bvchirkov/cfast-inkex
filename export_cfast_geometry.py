@@ -136,7 +136,7 @@ class CfastWallVent():
         self.face = None
     
     def __str__(self):
-        comp_ids:str
+        comp_ids:str = None
         if len(self.comp_ids) == 2:
             comp_ids = str(['\'{}\''.format(comp_id) for comp_id in self.comp_ids])[1:-1].replace('\"', '')
         elif len(self.comp_ids) == 1:
@@ -189,12 +189,21 @@ class ExportCfastGeometry(inkex.OutputExtension):
     select_all = (ShapeElement,)
 
     def save(self, stream) -> None:
+        def is_visible(elem:ShapeElement) -> bool:
+            style:list = elem.get('style').split(';')
+            for style_attr in style:
+                s = style_attr.split(':')
+                if s[0] == 'stroke' and s[1] == 'none':
+                    return False
+            else:
+                return True
+
         comps_raw = {}
         wallvents_raw = {}
         spots = {}
-        scale:CfastScale
+        scale:CfastScale = None
         origin_z = 0.0
-        current_layer:CfastType
+        current_layer:CfastType = None
         levels_links = {}
 
         for elem in self.svg.selection.filter(ShapeElement).values():
@@ -209,7 +218,7 @@ class ExportCfastGeometry(inkex.OutputExtension):
                     current_layer = CfastType.WALLVENT
                 elif 'room' in elem.label:
                     current_layer = CfastType.COMPARAMENT
-            elif isinstance(elem, Rectangle):
+            elif isinstance(elem, Rectangle) and is_visible(elem) and current_layer is not None:
                 raw_rect = CfastRectangle(elem, origin_z, scale)
                 if current_layer is CfastType.COMPARAMENT:
                     comps_raw[elem.get_id()] = raw_rect
