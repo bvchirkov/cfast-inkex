@@ -2,9 +2,8 @@
 ## I. Расширение редактора вектороной графики Inkscape для создания цифровой модели здания в формате программы CFAST
 
 ### Системные требования
-1) Inkscape >= 1.0.0
-2) CFAST >= 7.6
-3) Python >= 3.5
+1) [Inkscape 1.0.2](https://inkscape.org/ru/release/inkscape-1.0.2/)
+2) [CFAST 7.6](https://github.com/firemodels/cfast/releases/tag/CFAST7.6.0)
 
 ### Установка
 1) Скачайте файлы плагина со страницы выпусков ([releases](https://github.com/bvchirkov/cfast-inkex/releases))
