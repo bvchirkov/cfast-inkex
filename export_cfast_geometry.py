@@ -28,10 +28,6 @@ from inkex import ShapeElement, Layer, Rectangle, Circle
 LR = '\n'
 DEFAULT_HEIGHT_LEVEL = 3.0
 
-class CfastType:
-    COMPARAMENT = 0
-    WALLVENT    = 1
-
 class CfastFace:
     REAR  = 'REAR'
     FRONT = 'FRONT'
@@ -203,7 +199,6 @@ class ExportCfastGeometry(inkex.OutputExtension):
         spots = {}
         scale:CfastScale = None
         origin_z = 0.0
-        current_layer:CfastType = None
         levels_links = {}
 
         for elem in self.svg.selection.filter(ShapeElement).values():
@@ -214,15 +209,11 @@ class ExportCfastGeometry(inkex.OutputExtension):
                     link_id = elem.get('cfast:link_id')
                     if link_id is not None:
                         levels_links[origin_z] = link_id.split(',')
-                elif 'door' in elem.label:
-                    current_layer = CfastType.WALLVENT
-                elif 'room' in elem.label:
-                    current_layer = CfastType.COMPARAMENT
-            elif isinstance(elem, Rectangle) and is_visible(elem) and current_layer is not None:
+            elif isinstance(elem, Rectangle) and is_visible(elem):
                 raw_rect = CfastRectangle(elem, origin_z, scale)
-                if current_layer is CfastType.COMPARAMENT:
+                if 'room' in elem.getparent().label:
                     comps_raw[elem.get_id()] = raw_rect
-                elif current_layer is CfastType.WALLVENT:
+                elif 'door' in elem.getparent().label:
                     wallvents_raw[elem.get_id()] = raw_rect
             elif isinstance(elem, Circle):
                 spots[elem.get_id()] = {'x':scale.convert_width(elem.center[0]),
