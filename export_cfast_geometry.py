@@ -34,7 +34,7 @@ class CfastFace:
     LEFT  = 'LEFT'
     RIGHT = 'RIGHT'
 
-class Point:
+class CfastPoint:
     def __init__(self, x:float, y:float, z:float):
         self.x = x
         self.y = y
@@ -43,15 +43,15 @@ class Point:
     def __str__(self):
         return '({},{},{})'.format(round(self.x, 2), round(self.y, 2), round(self.z, 2))
 
-class Polygon(list):
+class CfastPolygon(list):
     def __init__(self, *args, **kwargs):
-        super(Polygon, self).__init__(args)
+        super(CfastPolygon, self).__init__(args)
     
 class Segment:
     HORISONTAL = 0
     VERTICAL = 1
 
-    def __init__(self, p1:Point, p2:Point):
+    def __init__(self, p1:CfastPoint, p2:CfastPoint):
         self.p1 = p1
         self.p2 = p2
     
@@ -105,7 +105,7 @@ class CfastFile:
         return content
 
 class CfastComparament():
-    def __init__(self, id:str, depth:float, width:float, height:float, origin:Point):
+    def __init__(self, id:str, depth:float, width:float, height:float, origin:CfastPoint):
         self.id = id
         self.depth = depth
         self.width = width
@@ -165,25 +165,21 @@ class CfastRectangle():
         x1 = self.x0 + self.width
         y1 = self.y0 + self.height
         
-        self.p0 = Point(self.x0, self.y0, self.z0)
-        self.p1 = Point(x1, self.y0, self.z0)
-        self.p2 = Point(x1, y1, self.z0)
-        self.p3 = Point(self.x0, y1, self.z0)
+        self.p0 = CfastPoint(self.x0, self.y0, self.z0)
+        self.p1 = CfastPoint(x1, self.y0, self.z0)
+        self.p2 = CfastPoint(x1, y1, self.z0)
+        self.p3 = CfastPoint(self.x0, y1, self.z0)
     
         self.front = Segment(self.p3, self.p0)
         self.left  = Segment(self.p0, self.p1)
         self.rear  = Segment(self.p1, self.p2)
         self.right = Segment(self.p2, self.p3)
 
-    def get_polygon(self) -> Polygon:
-        return Polygon(self.p0, self.p1, self.p2, self.p3)
+    def get_polygon(self) -> CfastPolygon:
+        return CfastPolygon(self.p0, self.p1, self.p2, self.p3)
     
     def get_segments(self):
         return (self.left, self.rear, self.right, self.front)
-    
-    def __str__(self) -> str:
-        return 'P({}, {}, {}, {})\n \
-                S()'.format(self.p0, self.p1, self.p2, self.p3)
 
 class ExportCfastGeometry(inkex.OutputExtension):
     select_all = (ShapeElement,)
@@ -204,18 +200,20 @@ class ExportCfastGeometry(inkex.OutputExtension):
         scale:CfastScale = None
         origin_z = 0.0
         levels_links = {}
+        num_of_levels = 0
 
         for elem in self.svg.selection.filter(ShapeElement).values():
             if isinstance(elem, Layer):
-                if 'Level' in elem.label:
-                    origin_z = DEFAULT_HEIGHT_LEVEL * (float(elem.label[-1]) - 1)
+                if 'level' in elem.label.lower():
+                    origin_z = DEFAULT_HEIGHT_LEVEL * num_of_levels
                     scale = CfastScale(float(elem.get('cfast:k_width')), float(elem.get('cfast:k_height')))
                     link_id = elem.get('cfast:link_id')
                     if link_id is not None:
                         levels_links[origin_z] = link_id.split(',')
+                    num_of_levels += 1
             elif isinstance(elem, Rectangle) and is_visible(elem):
                 raw_rect = CfastRectangle(elem, origin_z, scale)
-                parent_name = elem.getparent().label
+                parent_name = elem.getparent().label.lower()
                 eid = elem.get_id()
                 if 'room' in parent_name:
                     comps_raw[eid] = raw_rect
@@ -225,7 +223,7 @@ class ExportCfastGeometry(inkex.OutputExtension):
                 spots[elem.get_id()] = {'x':scale.convert_width(elem.center[0]),
                                         'y':-scale.convert_depth(elem.center[1])}
 
-        for z in levels_links.keys():
+        for z in levels_links:
             bottom_spot_id:str = levels_links[z][0]
             top_spot_id:str = levels_links[z][1]
             bottom_spot = spots[bottom_spot_id]
@@ -263,7 +261,6 @@ class ExportCfastGeometry(inkex.OutputExtension):
                             wallvent.comp_ids.sort(key = lambda id: int(id[4:]))
                             
                             if wallvent.face is None:
-                                # self.msg('{}, {}, {}'.format(vent_rect_id, wallvent.comp_ids[0], wallvent.comp_ids[1] if len(wallvent.comp_ids) == 2 else 0))
                                 wallvent_additional = self.process_wallvent(wallvents_raw.get(vent_rect_id), comps_raw.get(wallvent.comp_ids[0]).get_segments())
                                 wallvent.face = wallvent_additional['face']
                                 wallvent.width = wallvent_additional['width']
@@ -283,6 +280,14 @@ class ExportCfastGeometry(inkex.OutputExtension):
         cfast_content = CfastFile(comps, w_vents).to_string()
         stream.write("{}\n".format(cfast_content).encode('utf-8'))
 
+        self.msg('Экспорт данных успешно произведен')
+        self.msg('=================================')
+        self.msg('Количество помещений: {}'.format(len(comps)))
+        self.msg('Количество проемов: {}'.format(len(w_vents)))
+        self.msg('Количество уровней: {}'.format(num_of_levels))
+        self.msg('---------------------------------')
+        self.msg(cfast_content)
+
     '''
     Проверка вхождения точки в прямоугольник
 
@@ -291,13 +296,13 @@ class ExportCfastGeometry(inkex.OutputExtension):
     После получения треугольников поподает ли точка в треугольник, для чего выполняется проверка 
     с какой стороны от стороны треугольника находится точка.
     '''
-    def point_in_ractangle(self, point:Point, polygon:Polygon) -> bool:
+    def point_in_ractangle(self, point:CfastPoint, polygon:CfastPolygon) -> bool:
         triangles = ((polygon[0], polygon[1], polygon[2]), (polygon[2], polygon[3], polygon[0]))
 
         '''
         Проверка с какой стороны находится точка
         '''
-        def where_point(a:Point, b:Point, p:Point) -> int:
+        def where_point(a:CfastPoint, b:CfastPoint, p:CfastPoint) -> int:
             s = (b.x - a.x) * (p.y - a.y) - (b.y - a.y) * (p.x - a.x)
             if s > 0: return 1        # Точка слева от вектора AB
             elif s < 0: return -1     # Точка справа от вектора AB
@@ -306,7 +311,7 @@ class ExportCfastGeometry(inkex.OutputExtension):
         '''
         Проверка попадания точки в треугольник
         '''
-        def is_point_in_triangle(triangle:tuple, p:Point) -> bool:
+        def is_point_in_triangle(triangle:tuple, p:CfastPoint) -> bool:
             q1 = where_point(triangle[0], triangle[1], p)
             q2 = where_point(triangle[1], triangle[2], p)
             q3 = where_point(triangle[2], triangle[0], p)
@@ -327,7 +332,7 @@ class ExportCfastGeometry(inkex.OutputExtension):
     Проверка на пересечение двух линий
     '''
     def intersect(self, l1:Segment, l2:Segment) -> bool:
-        def area(a:Point, b:Point, c:Point) -> float:
+        def area(a:CfastPoint, b:CfastPoint, c:CfastPoint) -> float:
             return (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x)
         
         def swap(x:float, y:float) -> float:
@@ -351,7 +356,12 @@ class ExportCfastGeometry(inkex.OutputExtension):
     '''
     def process_wallvent(self, wallvent_raw:CfastRectangle, comp_segments:tuple):
         def get_crosses_segments(ss_wv, ss_comp):
-            ''' Для каждой стороны двери определяем с какими сторонами помещения она пересекается'''
+            '''
+             Для каждой стороны двери определяем с какими сторонами помещения она пересекается
+             
+             s_wv, ss_wv[(i+2)%4] - грани двери, которые пересекаются с граню помещения \n
+             s_c - грань помещения
+            '''
             b:bool = False
             for i, s_wv in enumerate(ss_wv):
                 for s_c in ss_comp:
@@ -365,7 +375,7 @@ class ExportCfastGeometry(inkex.OutputExtension):
                 return Segment.VERTICAL
             elif segment.p1.y == segment.p2.y:
                 return Segment.HORISONTAL
-
+        
         s1, s2, s3 = get_crosses_segments(wallvent_raw.get_segments(), comp_segments)
         wallvent_orientation = Segment.VERTICAL \
                                     if get_orientation_segment(s1) == Segment.HORISONTAL \
@@ -374,8 +384,8 @@ class ExportCfastGeometry(inkex.OutputExtension):
       
         comp_faces = [CfastFace.FRONT, CfastFace.RIGHT, CfastFace.REAR, CfastFace.LEFT]
         
-        comp_p0:Point = None
-        vent_p0:Point = None
+        comp_p0:CfastPoint = None
+        vent_p0:CfastPoint = None
         vent_offset:float = None
         face_id:int = comp_segments.index(s3)
         face:CfastFace = comp_faces[face_id]
