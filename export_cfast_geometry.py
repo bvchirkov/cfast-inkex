@@ -23,7 +23,7 @@ Export a cfast geometry file (.in)
 
 from typing import overload
 import inkex
-from inkex import ShapeElement, Layer, Rectangle, Circle
+from inkex import ShapeElement, Layer, Rectangle, Circle, Ellipse
 
 LR = '\n'
 DEFAULT_HEIGHT_LEVEL = 3.0
@@ -221,7 +221,7 @@ class ExportCfastGeometry(inkex.OutputExtension):
                     comps_raw[eid] = raw_rect
                 elif 'door' in parent_name:
                     wallvents_raw[eid] = raw_rect
-            elif isinstance(elem, Circle):
+            elif isinstance(elem, Circle) or isinstance(elem, Ellipse):
                 spots[elem.get_id()] = {'x':scale.convert_width(elem.center[0]),
                                         'y':-scale.convert_depth(elem.center[1])}
 
@@ -237,8 +237,6 @@ class ExportCfastGeometry(inkex.OutputExtension):
             for comp_rect in comps_raw.values():
                 if comp_rect.z0 == z:
                     comp_rect.set_offset(d_x, d_y)
-                    self.msg(comp_rect.rect.get_id())
-
 
         comparaments = {}
         wallvents = {}
