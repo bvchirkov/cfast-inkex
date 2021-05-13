@@ -180,6 +180,10 @@ class CfastRectangle():
     
     def get_segments(self):
         return (self.left, self.rear, self.right, self.front)
+    
+    def __str__(self) -> str:
+        return 'P({}, {}, {}, {})\n \
+                S()'.format(self.p0, self.p1, self.p2, self.p3)
 
 class ExportCfastGeometry(inkex.OutputExtension):
     select_all = (ShapeElement,)
@@ -211,10 +215,12 @@ class ExportCfastGeometry(inkex.OutputExtension):
                         levels_links[origin_z] = link_id.split(',')
             elif isinstance(elem, Rectangle) and is_visible(elem):
                 raw_rect = CfastRectangle(elem, origin_z, scale)
-                if 'room' in elem.getparent().label:
-                    comps_raw[elem.get_id()] = raw_rect
-                elif 'door' in elem.getparent().label:
-                    wallvents_raw[elem.get_id()] = raw_rect
+                parent_name = elem.getparent().label
+                eid = elem.get_id()
+                if 'room' in parent_name:
+                    comps_raw[eid] = raw_rect
+                elif 'door' in parent_name:
+                    wallvents_raw[eid] = raw_rect
             elif isinstance(elem, Circle):
                 spots[elem.get_id()] = {'x':scale.convert_width(elem.center[0]),
                                         'y':-scale.convert_depth(elem.center[1])}
@@ -230,7 +236,8 @@ class ExportCfastGeometry(inkex.OutputExtension):
 
             for comp_rect in comps_raw.values():
                 if comp_rect.z0 == z:
-                    comp_rect.set_offset(dx=d_x, dy=d_y)
+                    comp_rect.set_offset(d_x, d_y)
+                    self.msg(comp_rect.rect.get_id())
 
 
         comparaments = {}
@@ -258,6 +265,7 @@ class ExportCfastGeometry(inkex.OutputExtension):
                             wallvent.comp_ids.sort(key = lambda id: int(id[4:]))
                             
                             if wallvent.face is None:
+                                # self.msg('{}, {}, {}'.format(vent_rect_id, wallvent.comp_ids[0], wallvent.comp_ids[1] if len(wallvent.comp_ids) == 2 else 0))
                                 wallvent_additional = self.process_wallvent(wallvents_raw.get(vent_rect_id), comps_raw.get(wallvent.comp_ids[0]).get_segments())
                                 wallvent.face = wallvent_additional['face']
                                 wallvent.width = wallvent_additional['width']
@@ -349,11 +357,10 @@ class ExportCfastGeometry(inkex.OutputExtension):
             b:bool = False
             for i, s_wv in enumerate(ss_wv):
                 for s_c in ss_comp:
-                    if self.intersect(s_wv, s_c):
-                        b = True
-                        break
+                    b = self.intersect(s_wv, s_c)
+                    if b: break
                 if b: break
-            return s_wv, ss_wv[i+2], s_c
+            return s_wv, ss_wv[(i+2)%4], s_c
         
         def get_orientation_segment(segment:Segment) -> int:
             if segment.p1.x == segment.p2.x:
