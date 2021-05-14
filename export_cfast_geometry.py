@@ -181,10 +181,9 @@ class CfastRectangle():
     def get_segments(self):
         return (self.left, self.rear, self.right, self.front)
 
-class ExportCfastGeometry(inkex.OutputExtension):
-    select_all = (ShapeElement,)
+class CfastProcessing:
 
-    def save(self, stream) -> None:
+    def mapping(self, elements) -> None:
         def is_visible(elem:ShapeElement) -> bool:
             style:list = elem.get('style').split(';')
             for style_attr in style:
@@ -202,7 +201,7 @@ class ExportCfastGeometry(inkex.OutputExtension):
         levels_links = {}
         num_of_levels = 0
 
-        for elem in self.svg.selection.filter(ShapeElement).values():
+        for elem in elements:
             if isinstance(elem, Layer):
                 if 'level' in elem.label.lower():
                     origin_z = DEFAULT_HEIGHT_LEVEL * num_of_levels
@@ -277,16 +276,7 @@ class ExportCfastGeometry(inkex.OutputExtension):
         comps   = sorted(list(comparaments.values()), key=item_id)
         w_vents = sorted(list(wallvents.values()),    key=item_id)
 
-        cfast_content = CfastFile(comps, w_vents).to_string()
-        stream.write("{}\n".format(cfast_content).encode('utf-8'))
-
-        self.msg('Экспорт данных успешно произведен')
-        self.msg('=================================')
-        self.msg('Количество помещений: {}'.format(len(comps)))
-        self.msg('Количество проемов: {}'.format(len(w_vents)))
-        self.msg('Количество уровней: {}'.format(num_of_levels))
-        self.msg('---------------------------------')
-        self.msg(cfast_content)
+        return comps, w_vents
 
     '''
     Проверка вхождения точки в прямоугольник
@@ -408,6 +398,22 @@ class ExportCfastGeometry(inkex.OutputExtension):
             vent_offset = abs(comp_p0.y - vent_p0.y)
         
         return {'face':face, 'width':round(wallvent_width, 3), 'offset':round(vent_offset, 3)}
+
+class ExportCfastGeometry(inkex.OutputExtension):
+    select_all = (ShapeElement,)
+
+    def save(self, stream):
+        comps, w_vents = CfastProcessing().mapping(self.svg.selection.filter(ShapeElement).values())
+        cfast_content = CfastFile(comps, w_vents).to_string()
+        stream.write("{}\n".format(cfast_content).encode('utf-8'))
+
+        self.msg('Экспорт данных успешно произведен')
+        self.msg('=================================')
+        self.msg('Количество помещений: {}'.format(len(comps)))
+        self.msg('Количество проемов: {}'.format(len(w_vents)))
+        self.msg('---------------------------------')
+        self.msg(cfast_content)
+    
 
 if __name__ == '__main__':
     ExportCfastGeometry().run()
