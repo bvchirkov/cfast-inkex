@@ -21,7 +21,6 @@
 Export a cfast geometry file (.in)
 """
 
-from typing import overload
 import inkex
 from inkex import ShapeElement, Layer, Rectangle, Circle, Ellipse
 
@@ -183,7 +182,7 @@ class CfastRectangle():
 
 class CfastProcessing:
 
-    def mapping(self, elements) -> None:
+    def mapping(self, elements, inkex=None) -> None:
         def is_visible(elem:ShapeElement) -> bool:
             style:list = elem.get('style').split(';')
             for style_attr in style:
@@ -200,7 +199,7 @@ class CfastProcessing:
         origin_z = 0.0
         levels_links = {}
         num_of_levels = 0
-
+        
         for elem in elements:
             if isinstance(elem, Layer):
                 if 'level' in elem.label.lower():
@@ -221,6 +220,7 @@ class CfastProcessing:
             elif isinstance(elem, Circle) or isinstance(elem, Ellipse):
                 spots[elem.get_id()] = {'x':scale.convert_width(elem.center[0]),
                                         'y':-scale.convert_depth(elem.center[1])}
+        
 
         for z in levels_links:
             bottom_spot_id:str = levels_links[z][0]
@@ -231,19 +231,20 @@ class CfastProcessing:
             d_y:float = bottom_spot['y'] - top_spot['y']
             spots[top_spot_id] = {'x': top_spot['x'] + d_x, 'y': top_spot['y'] + d_y}
 
-            for comp_rect in comps_raw.values():
+            for comp_rect in list(comps_raw.values()) + list(wallvents_raw.values()):
                 if comp_rect.z0 == z:
                     comp_rect.set_offset(d_x, d_y)
+
 
         comparaments = {}
         wallvents = {}
         for comp_rect_id in comps_raw: # Обход по всем прямоугольникам типа Помещение
-            comp_rect:CfastRectangle = comps_raw.get(comp_rect_id)
+            comp_rect:CfastRectangle = comps_raw[comp_rect_id]
             comparaments[comp_rect_id] = CfastComparament(id=comp_rect_id, \
                                                         depth=comp_rect.height, height=DEFAULT_HEIGHT_LEVEL, width=comp_rect.width, \
                                                         origin=comp_rect.p0)
             for vent_rect_id in wallvents_raw: # Обход каждого прямоугольника типа Дверь
-                wallvent_rect:CfastRectangle = wallvents_raw.get(vent_rect_id)
+                wallvent_rect:CfastRectangle = wallvents_raw[vent_rect_id]
                 # Если дверь и помещение на разных уровнях, то их отношение не рассматривается
                 if comp_rect.p0.z != wallvent_rect.p0.z: continue
                 
@@ -260,11 +261,11 @@ class CfastProcessing:
                             wallvent.comp_ids.sort(key = lambda id: int(id[4:]))
                             
                             if wallvent.face is None:
-                                wallvent_additional = self.process_wallvent(wallvents_raw.get(vent_rect_id), comps_raw.get(wallvent.comp_ids[0]).get_segments())
+                                wallvent_additional = self.process_wallvent(wallvents_raw[vent_rect_id], comps_raw[wallvent.comp_ids[0]].get_segments())
                                 wallvent.face = wallvent_additional['face']
                                 wallvent.width = wallvent_additional['width']
                                 wallvent.offset = wallvent_additional['offset']
-
+        
         # Сортировка элементов по возрастанию индекса
         # Без сортировкаи  CFAST говорит об ошибке, потому что, например, 
         # дверь может соединять только помещение с меньшим индесом с помещеним с большим индексом,
@@ -403,7 +404,7 @@ class ExportCfastGeometry(inkex.OutputExtension):
     select_all = (ShapeElement,)
 
     def save(self, stream):
-        comps, w_vents = CfastProcessing().mapping(self.svg.selection.filter(ShapeElement).values())
+        comps, w_vents = CfastProcessing().mapping(self.svg.selection.filter(ShapeElement).values(), self)
         cfast_content = CfastFile(comps, w_vents).to_string()
         stream.write("{}\n".format(cfast_content).encode('utf-8'))
 
