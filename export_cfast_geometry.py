@@ -239,12 +239,12 @@ class CfastProcessing:
         comparaments = {}
         wallvents = {}
         for comp_rect_id in comps_raw: # Обход по всем прямоугольникам типа Помещение
-            comp_rect:CfastRectangle = comps_raw[comp_rect_id]
+            comp_rect:CfastRectangle = comps_raw.get(comp_rect_id)
             comparaments[comp_rect_id] = CfastComparament(id=comp_rect_id, \
                                                         depth=comp_rect.height, height=DEFAULT_HEIGHT_LEVEL, width=comp_rect.width, \
                                                         origin=comp_rect.p0)
             for vent_rect_id in wallvents_raw: # Обход каждого прямоугольника типа Дверь
-                wallvent_rect:CfastRectangle = wallvents_raw[vent_rect_id]
+                wallvent_rect:CfastRectangle = wallvents_raw.get(vent_rect_id)
                 # Если дверь и помещение на разных уровнях, то их отношение не рассматривается
                 if comp_rect.p0.z != wallvent_rect.p0.z: continue
                 
@@ -258,10 +258,10 @@ class CfastProcessing:
                             wallvent:CfastWallVent = wallvents.get(vent_rect_id)
                             if comp_rect_id not in wallvent.comp_ids:
                                 wallvent.comp_ids.append(comp_rect_id)
-                            wallvent.comp_ids.sort(key = lambda id: int(id[4:]))
+                            wallvent.comp_ids.sort(key = lambda id: int(id[4:]) if '-' not in id else int(id[4:].replace('-', '')) )
                             
-                            if wallvent.face is None:
-                                wallvent_additional = self.process_wallvent(wallvents_raw[vent_rect_id], comps_raw[wallvent.comp_ids[0]].get_segments())
+                            if wallvent.face is None or len(wallvent.comp_ids) == 2:
+                                wallvent_additional = self.process_wallvent(wallvents_raw.get(vent_rect_id), comps_raw.get(wallvent.comp_ids[0]).get_segments())
                                 wallvent.face = wallvent_additional['face']
                                 wallvent.width = wallvent_additional['width']
                                 wallvent.offset = wallvent_additional['offset']
@@ -412,6 +412,11 @@ class ExportCfastGeometry(inkex.OutputExtension):
         self.msg('=================================')
         self.msg('Количество помещений: {}'.format(len(comps)))
         self.msg('Количество проемов: {}'.format(len(w_vents)))
+        if len(w_vents) > 100:
+            self.msg('---------------------------------')
+            self.msg('Внимание! Ваше здание содержит более 100 помещений.')
+            self.msg('CFAST не работает с таким количеством помещений.')
+            self.msg('Для просмотра здания, сохраните файл в формате \'smv\'')
         self.msg('---------------------------------')
         self.msg(cfast_content)
     
