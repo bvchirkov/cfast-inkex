@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<inkscape-extension xmlns="http://www.inkscape.org/namespace/inkscape/extension">
+    <name>Export as Smokeview file</name>
+    <id>ru.rintd.export_smv_geometry</id>
+    <output>
+        <extension>.smv</extension>
+        <mimetype>text/plain</mimetype>
+        <filetypename>Smokeview Zone Modeling Keywords (*.smv)</filetypename>
+        <!-- <filetypetooltip>Exports the poligons of this document as CFAST geometry</filetypetooltip> -->
+    </output>
+    <script>
+        <command location="inx" interpreter="python">export_smv_geometry.py</command>
+    </script>
+</inkscape-extension>
