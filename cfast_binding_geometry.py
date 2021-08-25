@@ -29,11 +29,10 @@ class CfastBindingGeom(inkex.EffectExtension):
     def effect(self):
         opt = self.options
 
-        selected_elem = list(self.svg.get_selected())[0]
-        if isinstance(selected_elem, inkex.Rectangle):
-            level_parent = selected_elem.getparent().getparent()
-            level_parent.set("cfast:k_width", opt.width/selected_elem.width)
-            level_parent.set("cfast:k_height", opt.depth/selected_elem.height)
+        selected_elem = list(self.svg.selection.filter(inkex.Rectangle).values())[0]
+        level_parent = selected_elem.getparent().getparent()
+        level_parent.set("cfast:k_width", opt.width/selected_elem.width)
+        level_parent.set("cfast:k_height", opt.depth/selected_elem.height)
 
 if __name__ == '__main__':
     CfastBindingGeom().run()
