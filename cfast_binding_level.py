@@ -16,6 +16,7 @@
 # limitations under the License.
 
 import inkex
+from inkex import ShapeElement
 
 LINK = 'link'
 UNLINK = 'unlink'
@@ -34,12 +35,13 @@ class CfastLinkingLevels(inkex.EffectExtension):
     def effect(self):
         opt = self.options
 
-        selected_elems = list(self.svg.get_selected())
+        selected_elems = list(self.svg.selection.filter(ShapeElement).values())
         selected_elem_1 = selected_elems[0]
         selected_elem_2 = selected_elems[1]
         attr_name = 'cfast:link_id'
 
-        if isinstance(selected_elem_1, inkex.Circle) and isinstance(selected_elem_2, inkex.Circle):
+        if (isinstance(selected_elem_1, inkex.Circle) or isinstance(selected_elem_2, inkex.Ellipse)) and \
+            (isinstance(selected_elem_2, inkex.Circle) or isinstance(selected_elem_2, inkex.Ellipse)):
             level_parent = selected_elem_2.getparent().getparent()
             if opt.linking == LINK:
                 level_parent.set(attr_name, '{},{}'.format(selected_elem_1.get_id(), selected_elem_2.get_id()))
