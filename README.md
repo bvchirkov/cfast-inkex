@@ -2,8 +2,8 @@
 ## I. Расширение редактора векторной графики Inkscape для создания цифровой модели здания в формате программы CFAST
 
 ### Системные требования
-1) Inkscape 1.1 (*[download](https://inkscape.org/release/inkscape-1.1/)*)
-2) CFAST 7.6 (*[download](https://github.com/firemodels/cfast/releases/tag/CFAST7.6.0)*)
+1) Inkscape 1.2 (*[download](https://inkscape.org/release/inkscape-1.2/)*)
+2) CFAST 7.7 (*[download](https://pages.nist.gov/cfast/downloads.html)*)
 
 ### Установка
 1) Скачайте файлы плагина со страницы выпусков ([releases](https://github.com/bvchirkov/cfast-inkex/releases))
